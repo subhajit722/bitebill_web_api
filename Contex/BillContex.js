@@ -7,7 +7,7 @@ export const generateBill = () => {
         bill_no VARCHAR(50) NOT NULL,
         bill_name VARCHAR(255) NOT NULL,
         create_datetime DATETIME,
-        FOREIGN KEY (admin_bill_id) REFERENCES admin(id)
+        FOREIGN KEY (admin_bill_id) REFERENCES admin(id) ON DELETE CASCADE
     )`;
 
     db.query(createBillTableQuery, (err) => {

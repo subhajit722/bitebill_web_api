@@ -1,6 +1,6 @@
 import db from '../conncet.js'
 export const PostItem = (req, res) => {
-    const { itemname, category, price, gst, itemcode,} = req.body;
+    const { itemname, category, price, gst, itemcode, stock } = req.body;
     const adminId = req.user.id; // Assuming you have user authentication middleware setting req.user
 
     // Create item table if not exists
@@ -13,8 +13,9 @@ export const PostItem = (req, res) => {
         price DECIMAL(10, 2) NOT NULL,
         gst DECIMAL(5, 2) NOT NULL,
         totalprice DECIMAL(10, 2),
-        FOREIGN KEY (admin_id) REFERENCES admin(id)
-    )`;
+        stock INT,
+        FOREIGN KEY (admin_id) REFERENCES admin(id) ON DELETE CASCADE
+    )`; // Removed extra closing parenthesis here
 
     db.query(createItemTableQuery, (err) => {
         if (err) {
@@ -23,9 +24,9 @@ export const PostItem = (req, res) => {
         }
 
         // Insert item into the database
-        const insertItemQuery = "INSERT INTO item (admin_id, itemname, itemcode, category, price, gst, totalprice) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        const insertItemQuery = "INSERT INTO item (admin_id, itemname, itemcode, category, price, gst, totalprice, stock) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         const totalprice = calculateTotalPrice(price, gst);
-        const values = [adminId, itemname, itemcode, category, price, gst, totalprice];
+        const values = [adminId, itemname, itemcode, category, price, gst, totalprice, stock]; // Added stock here
 
         db.query(insertItemQuery, values, (err) => {
             if (err) {
@@ -36,6 +37,8 @@ export const PostItem = (req, res) => {
         });
     });
 };
+
+
 
 export const GetItem = (req, res) => {
     const adminId = req.user.id; // Assuming you have user authentication middleware setting req.user
@@ -64,7 +67,9 @@ const calculateTotalPrice = (price, gst) => {
 
 
 export const EditItem = (req, res) => {
-    const { id, itemname, category, price, gst, itemcode } = req.body;
+    const {id } = req.params
+    const {  itemname, category, price, gst, itemcode } = req.body;
+    console.log(req.body)
     const adminId = req.user.id; // Assuming you have user authentication middleware setting req.user
 console.log(req.body)
     // Calculate total price including GST
@@ -88,7 +93,7 @@ export const DeleteItem = (req, res) => {
     const { id } = req.params;
     const adminId = req.user.id; // Assuming you have user authentication middleware setting req.user
     console.log(id)
-    // Delete item from the database
+
     const deleteItemQuery = "DELETE FROM item WHERE id = ? AND admin_id = ?";
     db.query(deleteItemQuery, [id, adminId], (err) => {
         if (err) {

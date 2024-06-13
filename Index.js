@@ -12,7 +12,7 @@ dotenv.config();
 
 // Enable CORS for all routes
 app.use(cors({
-    origin: [process.env.DATABASE_URL, "http://localhost:3000" , "'http://192.168.70.67:3000'" , 'http://192.168.1.12:3000'], 
+    origin: [`${process.env.DATABASE_URL}`, "http://localhost:3000" , 'http://192.168.1.4:3000' , 'http://192.168.1.8:3000'], 
     credentials: true // Enable CORS credentials
 }));
 

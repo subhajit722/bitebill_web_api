@@ -39,28 +39,46 @@ const createAdminTable = () => {
 };
 
 // Register function with forgot password integration
+// Register function with forgot password integration
 export const register = (req, res) => {
     createAdminTable();
     const { email, username, password } = req.body;
-    const otp = generateOTP(); // Generate OTP
-    const token = generateOTPToken(otp); // Generate OTP token
 
-    // Send OTP to user's email
-    transporter.sendMail({
-        from: 'subhajitncvt@gmail.com',
-        to: email,
-        subject: 'Registration OTP',
-        text: `Your OTP for registration is: ${otp}`
-    }, (err) => {
+    // Check if the email already exists in the database
+    const checkEmailQuery = "SELECT * FROM admin WHERE email = ?";
+    db.query(checkEmailQuery, [email], (err, results) => {
         if (err) {
-            console.error("Error occurred while sending email:", err);
-            return res.status(500).json({ error: "Failed to send OTP email", details: err });
+            console.error("Error checking email:", err);
+            return res.status(500).json({ error: "Database error", details: err });
+        }
+        
+        if (results.length > 0) {
+            // Email already exists, return an error response
+            return res.status(400).json({ error: "Email already exists" });
         }
 
-        console.log("Email sent successfully");
-        return res.status(200).json({ message: "OTP sent successfully", token });
+        // Email does not exist, proceed with registration
+        const otp = generateOTP(); // Generate OTP
+        const token = generateOTPToken(otp); // Generate OTP token
+
+        // Send OTP to user's email
+        transporter.sendMail({
+            from: 'subhajitncvt@gmail.com',
+            to: email,
+            subject: 'Registration OTP',
+            text: `Your OTP for registration is: ${otp}`
+        }, (err) => {
+            if (err) {
+                console.error("Error occurred while sending email:", err);
+                return res.status(500).json({ error: "Failed to send OTP email", details: err });
+            }
+
+            console.log("Email sent successfully");
+            return res.status(200).json({ message: "OTP sent successfully", token });
+        });
     });
 };
+
 
 // Verify OTP and register user
 export const verifyOTPAndRegister = (req, res) => {
@@ -69,14 +87,17 @@ export const verifyOTPAndRegister = (req, res) => {
 
     // Verify OTP token
     jwt.verify(otpToken, "otp_secret", (err, decoded) => {
-        console.log(decoded.otp)
-        console.log(otp)
-        if (err || decoded.otp !== otp) {
-            return res.status(400).json({ error: "Invalid or expired OTP token" });
+        if (err) {
+            console.error('Error verifying OTP token or OTP mismatch:', err);
+            return res.status(400).json({ error: "Invalid OTP or expired OTP token" });
         }
+    
+    
+    
 
         // Hash the password
-        bcrypt.hash(password, 8, (err, hashedPassword) => {
+   bcrypt.hash(password, 8, (err, hashedPassword) => {
+            console.log(hashedPassword)
             if (err) {
                 return res.status(500).json({ error: "Failed to hash password" });
             }
@@ -98,6 +119,7 @@ export const verifyOTPAndRegister = (req, res) => {
 // Login function
 export const login = (req, res) => {
     const { email, password } = req.body;
+    console.log(req.body)
     const query = "SELECT * FROM admin WHERE email = ?";
     db.query(query, [email], (err, results) => {
         if (err) {
@@ -184,13 +206,15 @@ export const logout = (req, res) => {
     res.clearCookie("accessToken").status(200).json({ message: "User is logged out" });
 };
 
-// Function to generate a random 4-digit OTP
+
 const generateOTP = () => {
     return Math.floor(1000 + Math.random() * 9000); // Generates a random 4-digit number
 };
 
 // Function to generate JWT token containing the OTP payload
 const generateOTPToken = (otp) => {
+
+
     return jwt.sign({ otp }, "otp_secret", { expiresIn: '10m' }); 
     // Token expires in 10 minutes
 };
